@@ -1,0 +1,7 @@
+telethon
+pymongo
+dotenv
+pytz
+logging
+Path
+datetime
