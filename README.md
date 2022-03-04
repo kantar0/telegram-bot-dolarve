@@ -12,11 +12,11 @@ _Cualquier servidor web que soporte de python
 1. Descargue o clone del proyecto.
 2. Suba o despligue los archivos y carpeta en un servidor web que soporte python
 3. agregue los entornos virtuales correspondiente: 
-   - MONGODB_URL
-   - API_ID
-   - API_HASH
-   - STRING_SESSION
-5. - ejecute bot.py
+   * MONGODB_URL
+   * API_ID
+   * API_HASH
+   * STRING_SESSION
+5. ejecute bot.py
 
 
 ## Construido con 🛠️
