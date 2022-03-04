@@ -31,4 +31,4 @@ _Cualquier servidor web que soporte de python
 * **Pedro Rojas** - *developer* - [kantar0](https://github.com/kantar0)
 
 ---
-⌨️ con ❤️ por [kantar0](https://github.com/kantar0)  - [kiwilab](https://kiwilab.dev)😊
+⌨️ con ❤️ por [kantar0](https://github.com/kantar0)  - [kantar0.dev](https://kantar0.dev)😊
