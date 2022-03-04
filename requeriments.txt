@@ -1,6 +1,6 @@
 telethon
 pymongo
-dotenv
+python-dotenv
 pytz
 logging
 Path
