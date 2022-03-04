@@ -1,8 +1,9 @@
 # telegram-bot-dolarve
+<p align="center">
+![photo](https://kantar0.dev/media/bottelegram.png)
+</p>
 _Bot de telegram para extraer los mensajes de los diversos grupos de monitorDolar/Enparalelo_
 
----
-![Image text](https://kantar0.dev/media/bottelegram.png)
 ---
 
 ### Pre-requisitos 📋
