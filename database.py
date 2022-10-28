@@ -17,7 +17,7 @@ def check_connection(client_mongodb):
         return True
     except OperationFailure as err:
         log_error('MongoDB connection failed. Error : ' + str(err))
-        return 
+        return False
         
 def insert_record(record, client_mongodb):
     db = client_mongodb["database"]

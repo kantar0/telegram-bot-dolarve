@@ -26,10 +26,18 @@ with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_I
     client.start()
     client.send_message('me', 'Telegram bot : I\'m alive, Master')
     log_info('telethon bot started')
-    myChannelIDList = ['me','@EnParaleloVzla', '@enparalelovzlatelegram', 'botkantar0']
+    myChannelIDList = ['me', 1482307486, 1738581131]
+    
+    
+    for d in client.iter_dialogs():
+        channelId = d.entity.id
+        channelName = d.name
+        print(f"channel id: {channelId}, channel name: {channelName}")
+
     @client.on(events.NewMessage(chats=myChannelIDList))
     async def handler(event):
-        if event.message.photo:
+        if event.message.media:
+            print('media')
             if(pattern.search(event.message.message)):
                 savedPattern = pattern.search(event.message.message).group(0)
                 ratePrice = round(float(floatPattern.search(savedPattern).group(0).replace(',','.')),2)
@@ -53,8 +61,9 @@ with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_I
                     'rate_porcentage_symbol': rateSymbolPorcentageToRecord
                 }
                 database.insert_record(recordToDB, client_mongodb)
-                ##await client.send_message('me', 'telethon: '+ "record inserted. || " + str(datetime.now()))
-                log_info("record from channel_id " + str(event.message.peer_id.channel_id) + " has been inserted.")
+                await client.send_message('me', 'telethon: '+ "record inserted. || " + str(datetime.now()))
+                log_info('telethon: '+ "record inserted.")
+                """
                 recordToState = {
                     'price': ratePrice ,
                     'rate_porcentage': ratePorcentage,
@@ -66,7 +75,7 @@ with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_I
                     log_info("New statu has been sent  to Bot Discord.")
                 else:
                     log_info("Error sending new statu to Bot Discord.")
-                
+                """
             else:
                 log_info("pattern not found in channel_id " + str(event.message.peer_id.channel_id))
         if (event.message.message == '/disconnect' ):
@@ -78,7 +87,7 @@ with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_I
             log_info("Telegram bot has been pinged from command ")
     @client.on(events.MessageEdited(chats=myChannelIDList))
     async def handler(event):
-        if event.message.photo:
+        if event.message.media:
             if(pattern.search(event.message.message)):
                 savedPattern = pattern.search(event.message.message).group(0)
                 ratePrice = round(float(floatPattern.search(savedPattern).group(0).replace(',','.')),2)
@@ -102,8 +111,9 @@ with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_I
                     'rate_porcentage_symbol': rateSymbolPorcentageToRecord
                 }
                 database.insert_record(recordToDB)
-                ##await client.send_message('me', 'telethon: ' + "record inserted from edited post || " + str(datetime.now()))
-                log_info("record  from edited post in channel_id " + str(event.message.peer_id.channel_id) + " has been inserted.")
+                await client.send_message('me', 'telethon: ' + "record inserted from edited post || " + str(datetime.now()))
+                log_info('telethon: '+ "record inserted.")
+                """
                 recordToState = {
                     'price': ratePrice ,
                     'rate_porcentage': ratePorcentage,
@@ -115,7 +125,7 @@ with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_I
                     log_info("New statu has been sent  to Bot Discord.")
                 else:
                     log_info("Error sending new statu to Bot Discord.")
-                
+                """
             else:
                 log_info("pattern not found from a edited post in channel_id " + str(event.message.peer_id.channel_id))
     client.run_until_disconnected()
