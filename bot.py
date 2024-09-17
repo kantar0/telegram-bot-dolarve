@@ -2,131 +2,135 @@
 import os
 import re
 import requests
-from telethon.sync import TelegramClient, events
+from telethon import TelegramClient, events
 from telethon.sessions import StringSession
-from datetime import datetime
-from localDataTime import utc_to_local, aslocaltimestr # localDataTime.py
-from log_func import log_info, log_error, log_debug, log_warning, start_logging # log_func.py
-import settings # settings.py
-import database # database. 
+from telethon.tl.types import PeerChannel
+from localDataTime import utc_to_local, aslocaltimestr  # localDataTime.py
+from log_func import (
+    log_info,
+    log_error,
+    log_debug,
+    log_warning,
+    start_logging,
+)  # log_func.py
+import settings  # settings.py
 
-# defining the variables
-settings.start_env() #carga las variables de entorno
-start_logging() # inicia el log
-newHeaders = {'auth-token': os.getenv('API_TOKEN')} # headers para la peticion
-client_mongodb = database.start_connection() # conecta a la base de datos
-database.check_connection(client_mongodb) # verifica la conexion a la base de datos
-pattern = re.compile(r'[💵]\ [Bs\.]+\ [0-9]+[,][0-9]+') ##patrón de busqueda  para localizar el mensaje con la información del dolar
-percentagePattern = re.compile(r'[🔺]\ [0-9]+[,][0-9]+[%]|[🔻]\ [0-9]+[,][0-9]+[%]|[=]\ [0-9]+[,][0-9]+[%]') #patrón de busqueda para localizar el mensaje con el porcentaje del dolar
-floatPattern = re.compile(r'[0-9]+[,][0-9]+') #Patrón flotante
+# Load environment variables
+settings.start_env()  # Cargar las variables de entorno
+start_logging()  # Inicia el log
+print(os.getenv("API_ID"))
+print(os.getenv("API_HASH"))
 
-with TelegramClient(StringSession(os.getenv('STRING_SESSION')), os.getenv('API_ID'), os.getenv('API_HASH')) as client:
-    #si pierdes la sesión, desactiva el comentario de la siguiente linea y quita el parametro os.getenv('STRING_SESSION') del constructor, posteriormente  guarda el token de la sesión en el archivo .env
-    #print(StringSession.save(client.session))
-    client.start()
-    client.send_message('me', 'Telegram bot : I\'m alive, Master')
-    log_info('telethon bot started')
-    myChannelIDList = ['me', 1482307486, 1738581131]
-    
-    
-    for d in client.iter_dialogs():
-        channelId = d.entity.id
-        channelName = d.name
-        print(f"channel id: {channelId}, channel name: {channelName}")
+# Verifica que STRING_SESSION no sea None
+string_session = os.getenv("STRING_SESSION") if os.getenv("STRING_SESSION") else None
 
-    @client.on(events.NewMessage(chats=myChannelIDList))
-    async def handler(event):
-        if event.message.media:
-            print('media')
-            if(pattern.search(event.message.message)):
-                savedPattern = pattern.search(event.message.message).group(0)
-                ratePrice = round(float(floatPattern.search(savedPattern).group(0).replace(',','.')),2)
-                ratePorcentage = round(float(floatPattern.search(percentagePattern.search(event.message.message).group(0)).group(0).replace(',','.')),2)
-                rateSymbolPorcentage = percentagePattern.search(event.message.message).group(0)[0]
-                if (rateSymbolPorcentage == '🔺'):
-                    rateSymbolPorcentageToRecord = '🔺'
-                elif (rateSymbolPorcentage == '🔻'):
-                    rateSymbolPorcentageToRecord = '🔻'
-                else:
-                    rateSymbolPorcentageToRecord = '='
-                rawPath = await event.message.download_media(file="media/"+str(event.message.id))
-                src_media_path = rawPath.replace("\\","/").replace("./","/")
-                recordToDB = {
-                    'price': ratePrice ,
-                    'social_network_source': 'telegram',
-                    'social_network_nickname': 'enparalelovzlatelegram',
-                    'captured_date': aslocaltimestr(event.date),
-                    'media_path': src_media_path,
-                    'rate_porcentage': ratePorcentage,
-                    'rate_porcentage_symbol': rateSymbolPorcentageToRecord
-                }
-                database.insert_record(recordToDB, client_mongodb)
-                await client.send_message('me', 'telethon: '+ "record inserted. || " + str(datetime.now()))
-                log_info('telethon: '+ "record inserted.")
-                """
-                recordToState = {
-                    'price': ratePrice ,
-                    'rate_porcentage': ratePorcentage,
-                    'rate_porcentage_symbol': rateSymbolPorcentageToRecord
-                }
-                response = requests.post(os.getenv('API_URL_BOT_DISCORD'),
-                         headers=newHeaders, json=recordToState)
-                if (response.status_code == 200): 
-                    log_info("New statu has been sent  to Bot Discord.")
-                else:
-                    log_info("Error sending new statu to Bot Discord.")
-                """
-            else:
-                log_info("pattern not found in channel_id " + str(event.message.peer_id.channel_id))
-        if (event.message.message == '/disconnect' ):
-            await client.send_message('me', 'Telegram bot: '+ " Bye!")
-            log_info("Telegram bot has been disconnected from command ")
-            await client.disconnect()
-        if (event.message.message == '/ping' ):
-            await client.send_message('me', 'Telegram bot: '+ " pong!")
-            log_info("Telegram bot has been pinged from command ")
-    @client.on(events.MessageEdited(chats=myChannelIDList))
-    async def handler(event):
-        if event.message.media:
-            if(pattern.search(event.message.message)):
-                savedPattern = pattern.search(event.message.message).group(0)
-                ratePrice = round(float(floatPattern.search(savedPattern).group(0).replace(',','.')),2)
-                ratePorcentage = round(float(floatPattern.search(percentagePattern.search(event.message.message).group(0)).group(0).replace(',','.')),2)
-                rateSymbolPorcentage = percentagePattern.search(event.message.message).group(0)[0]
-                if (rateSymbolPorcentage == '🔺'):
-                    rateSymbolPorcentageToRecord = '🔺'
-                elif (rateSymbolPorcentage == '🔻'):
-                    rateSymbolPorcentageToRecord = '🔻'
-                else:
-                    rateSymbolPorcentageToRecord = '='
-                rawPath = await event.message.download_media(file="media/"+str(event.message.id))
-                src_media_path = rawPath.replace("\\","/").replace("./","/")
-                recordToDB = {
-                    'price': ratePrice ,
-                    'social_network_source': 'telegram',
-                    'social_network_nickname': 'enparalelovzlatelegram',
-                    'captured_date': aslocaltimestr(event.date),
-                    'media_path': src_media_path,
-                    'rate_porcentage': ratePorcentage,
-                    'rate_porcentage_symbol': rateSymbolPorcentageToRecord
-                }
-                database.insert_record(recordToDB)
-                await client.send_message('me', 'telethon: ' + "record inserted from edited post || " + str(datetime.now()))
-                log_info('telethon: '+ "record inserted.")
-                """
-                recordToState = {
-                    'price': ratePrice ,
-                    'rate_porcentage': ratePorcentage,
-                    'rate_porcentage_symbol': rateSymbolPorcentageToRecord
-                }
-                response = requests.post(os.getenv('API_URL_BOT_DISCORD'),
-                         headers=newHeaders, json=recordToState)
-                if (response.status_code == 200): 
-                    log_info("New statu has been sent  to Bot Discord.")
-                else:
-                    log_info("Error sending new statu to Bot Discord.")
-                """
-            else:
-                log_info("pattern not found from a edited post in channel_id " + str(event.message.peer_id.channel_id))
-    client.run_until_disconnected()
-    
+# Define la función asincrónica principal
+async def main():
+    # Inicializa el cliente de Telegram
+    async with TelegramClient(
+        StringSession(string_session),
+        int(os.getenv("API_ID")),
+        os.getenv("API_HASH"),
+    ) as client:
+        print(StringSession.save(client.session))
+        await client.start()
+        await client.send_message("me", "Telegram bot : I'm alive, Master Pedro")
+        log_info("telethon bot started")
+
+        # Lista de IDs de canales o grupos de origen (donde se obtendrán los mensajes)
+        source_channel_ids = [-2172964101, -1488430381]
+
+        # ID del grupo al que se enviarán los mensajes
+        target_group_id = -2478364422
+
+        # Obtener las entidades de los canales o grupos de origen
+        source_channels = []
+        for channel_id in source_channel_ids:
+            channel_entity = await client.get_entity(PeerChannel(channel_id))
+            source_channels.append(channel_entity)
+
+        # Obtener la entidad del grupo de destino
+        target_group = await client.get_entity(PeerChannel(target_group_id))
+
+        # Opcional: Mostrar los diálogos (puedes comentar esto si no es necesario)
+        async for d in client.iter_dialogs():
+            channelId = d.entity.id
+            channelName = d.name
+            print(f"channel id: {channelId}, channel name: {channelName}")
+
+        # Manejador de nuevos mensajes en los canales o grupos de origen
+        @client.on(events.NewMessage(chats=source_channels))
+        async def forward_message(event):
+            msg = event.message
+            print
+            # Impresión en consola mostrando el mensaje procesado
+            print(
+                f"Nuevo mensaje detectado. ID: {msg.id}, Texto: {msg.message}, Contiene medios: {'Sí' if msg.media else 'No'}"
+            )
+
+            # Caso 1: Si el mensaje tiene medios adjuntos (fotos, videos, etc.)
+            if msg.media:
+                try:
+                    # Descargar el archivo multimedia y obtener el nombre real del archivo
+                    filename = await msg.download_media()
+                    if filename:
+                        print(f"Archivo {filename} descargado.")
+
+                        # Obtener el tamaño del archivo para verificar si es demasiado grande (opcional)
+                        file_size = os.path.getsize(filename) / (1024 * 1024)  # Convertir a MB
+                        print(f"Tamaño del archivo: {file_size:.2f} MB")
+
+                        # Enviar el archivo multimedia junto con el texto (si existe) al grupo de destino
+                        try:
+                            if msg.message:
+                                await client.send_file(
+                                    target_group, filename, caption=msg.message
+                                )
+                                print(
+                                    f"Archivo {filename} enviado al grupo {target_group.id} con el texto: {msg.message}"
+                                )
+                            else:
+                                await client.send_file(target_group, filename)
+                                print(
+                                    f"Archivo {filename} enviado al grupo {target_group.id} sin texto."
+                                )
+                        except Exception as e:
+                            print(
+                                f"Error al enviar el archivo {filename} al grupo {target_group.id}: {e}"
+                            )
+
+                        # Eliminar el archivo después de enviarlo
+                        if os.path.exists(filename):
+                            os.remove(filename)
+                            print(
+                                f"Archivo {filename} eliminado correctamente después de enviarlo."
+                            )
+                        else:
+                            print(f"El archivo {filename} no existe o ya fue eliminado.")
+                    else:
+                        print("Error: No se pudo descargar el archivo.")
+
+                except Exception as e:
+                    print(f"Ocurrió un error al procesar el archivo: {e}")
+
+            # Caso 2: Si el mensaje solo tiene texto (y no tiene medios)
+            elif msg.message:
+                try:
+                    await client.send_message(target_group, msg.message)
+                    print(
+                        f"Mensaje de solo texto enviado al grupo {target_group.id}: {msg.message}"
+                    )
+                except Exception as e:
+                    print(
+                        f"Error al enviar el mensaje al grupo {target_group.id}: {e}"
+                    )
+
+        # Ejecutar hasta desconectar
+        await client.run_until_disconnected()
+
+
+# Ejecutar el bucle de eventos asincrónico
+import asyncio
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
